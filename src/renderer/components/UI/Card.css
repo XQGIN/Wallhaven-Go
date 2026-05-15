@@ -1,0 +1,40 @@
+.card {
+  background: var(--glass-bg);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid var(--glass-border);
+  border-radius: 16px;
+  padding: 20px;
+  box-shadow: var(--shadow-sm);
+  transition: all 0.3s ease;
+}
+
+.card:hover {
+  border-color: var(--accent-color);
+}
+
+/* 高性能模式：静态卡片样式 */
+.card-static {
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  background: var(--bg-card);
+  transition: none;
+}
+
+.card-static:hover {
+  transform: none;
+  box-shadow: var(--shadow-sm);
+}
+
+.card-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: 16px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.card-content {
+  color: var(--text-secondary);
+}

@@ -1,0 +1,99 @@
+{
+  "name": "wallhaven-electron",
+  "version": "3.0.0",
+  "description": "WallHaven Go - Electron Edition with React 18 and Liquid Glass Effects",
+  "main": "dist/main/main.js",
+  "author": "WallhavenDownloader",
+  "license": "MIT",
+  "private": true,
+  "scripts": {
+    "dev": "npm run build:main && concurrently \"npm run dev:renderer\" \"npm run dev:electron\"",
+    "dev:renderer": "vite",
+    "dev:electron": "electron . --dev",
+    "build": "npm run build:main && npm run build:renderer",
+    "build:main": "tsc -p src/main/tsconfig.json && node scripts/fix-dist.js",
+    "build:renderer": "vite build",
+    "preview": "vite preview",
+    "lint": "eslint . --ext .ts,.tsx",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@eslint/js": "^8.55.0",
+    "@types/node": "^20.10.0",
+    "@types/react": "^18.2.43",
+    "@types/react-dom": "^18.2.17",
+    "@types/three": "^0.168.0",
+    "@typescript-eslint/eslint-plugin": "^6.14.0",
+    "@typescript-eslint/parser": "^6.14.0",
+    "@vitejs/plugin-react": "^4.2.1",
+    "concurrently": "^8.2.2",
+    "electron": "^28.0.0",
+    "electron-builder": "^24.9.1",
+    "eslint": "^8.55.0",
+    "eslint-plugin-react-hooks": "^4.6.0",
+    "eslint-plugin-react-refresh": "^0.4.5",
+    "globals": "^13.24.0",
+    "typescript": "^5.3.3",
+    "typescript-eslint": "^7.0.0",
+    "vite": "^5.0.8"
+  },
+  "dependencies": {
+    "@react-three/drei": "^9.92.7",
+    "@react-three/fiber": "^8.15.12",
+    "@react-three/postprocessing": "^2.15.11",
+    "axios": "^1.6.2",
+    "framer-motion": "^10.16.16",
+    "postprocessing": "^6.36.0",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "react-router-dom": "^6.21.0",
+    "three": "^0.168.0",
+    "zustand": "^4.4.7"
+  },
+  "build": {
+    "appId": "com.wallhaven.downloader",
+    "productName": "WallHaven Go",
+    "directories": {
+      "output": "release"
+    },
+    "files": [
+      "dist/**/*",
+      "icon/**/*",
+      "node_modules/**/*"
+    ],
+    "icon": "icon/logo.png",
+    "mac": {
+      "category": "public.app-category.utilities",
+      "icon": "icon/logo.png",
+      "target": [
+        {
+          "target": "dmg",
+          "arch": ["x64", "arm64"]
+        }
+      ]
+    },
+    "win": {
+      "icon": "icon/logo.ico",
+      "target": [
+        {
+          "target": "nsis",
+          "arch": ["x64", "ia32"]
+        }
+      ]
+    },
+    "linux": {
+      "icon": "icon/logo.png",
+      "target": [
+        {
+          "target": "AppImage",
+          "arch": ["x64"]
+        },
+        {
+          "target": "deb",
+          "arch": ["x64"]
+        }
+      ],
+      "category": "Utility"
+    }
+  }
+}
