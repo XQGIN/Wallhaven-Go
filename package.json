@@ -94,6 +94,9 @@
         }
       ]
     },
+    "portable": {
+      "artifactName": "WallHaven Go-Portable-${version}.${ext}"
+    },
     "nsis": {
       "oneClick": false,
       "allowToChangeInstallationDirectory": true,
