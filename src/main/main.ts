@@ -1,4 +1,4 @@
-import { app, BrowserWindow, ipcMain, dialog, shell, Tray, Menu, nativeImage, protocol } from 'electron';
+import { app, BrowserWindow, ipcMain, dialog, shell, Tray, Menu, nativeImage, protocol, NativeImage } from 'electron';
 import * as path from 'path';
 import * as fs from 'fs';
 import { SettingsManager } from './settings-manager';
@@ -167,7 +167,8 @@ class WallhavenApp {
   }
 
   private getIconPath(): string {
-    const iconDir = path.join(__dirname, '../../icon');
+    // 使用 process.resourcesPath 获取资源目录，支持 asar 打包
+    const iconDir = path.join(process.resourcesPath, 'app', 'icon');
     if (process.platform === 'win32') {
       return path.join(iconDir, 'logo.ico');
     } else if (process.platform === 'darwin') {
@@ -177,13 +178,56 @@ class WallhavenApp {
     }
   }
 
-  private createTray(): void {
+  private createTrayIcon(): NativeImage {
     const iconPath = this.getIconPath();
+    console.log('[Tray] Loading icon from:', iconPath);
     
     try {
+      // 检查文件是否存在
+      if (!fs.existsSync(iconPath)) {
+        console.error('[Tray] Icon file not found:', iconPath);
+        // 尝试备用路径
+        const fallbackPath = path.join(process.resourcesPath, 'app.asar.unpacked', 'icon', 'logo.ico');
+        console.log('[Tray] Trying fallback path:', fallbackPath);
+        if (fs.existsSync(fallbackPath)) {
+          return nativeImage.createFromPath(fallbackPath);
+        }
+        // 返回空图标
+        return nativeImage.createEmpty();
+      }
+      
       const icon = nativeImage.createFromPath(iconPath);
+      
+      // 检查图标是否为空
+      if (icon.isEmpty()) {
+        console.error('[Tray] Icon is empty, trying PNG fallback');
+        const pngPath = path.join(path.dirname(iconPath), 'logo.png');
+        if (fs.existsSync(pngPath)) {
+          return nativeImage.createFromPath(pngPath);
+        }
+        return nativeImage.createEmpty();
+      }
+      
       // 调整图标大小以适应托盘
-      const trayIcon = icon.resize({ width: 16, height: 16 });
+      const resized = icon.resize({ width: 16, height: 16 });
+      if (!resized.isEmpty()) {
+        return resized;
+      }
+      return icon;
+    } catch (error) {
+      console.error('[Tray] Failed to create tray icon:', error);
+      return nativeImage.createEmpty();
+    }
+  }
+
+  private createTray(): void {
+    try {
+      const trayIcon = this.createTrayIcon();
+      
+      if (trayIcon.isEmpty()) {
+        console.error('[Tray] Could not create valid tray icon');
+        return;
+      }
       
       this.tray = new Tray(trayIcon);
       this.tray.setToolTip('WallHaven Go');
@@ -199,8 +243,10 @@ class WallhavenApp {
       this.tray.on('double-click', () => {
         this.showWindow();
       });
+      
+      console.log('[Tray] Tray created successfully');
     } catch (error) {
-      console.error('Failed to create tray:', error);
+      console.error('[Tray] Failed to create tray:', error);
     }
   }
 

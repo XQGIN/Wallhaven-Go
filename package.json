@@ -3,7 +3,7 @@
   "version": "3.0.0",
   "description": "WallHaven Go - Electron Edition with React 18 and Liquid Glass Effects",
   "main": "dist/main/main.js",
-  "author": "WallhavenDownloader",
+  "author": "XQGIN",
   "license": "MIT",
   "private": true,
   "scripts": {
@@ -15,7 +15,11 @@
     "build:renderer": "vite build",
     "preview": "vite preview",
     "lint": "eslint . --ext .ts,.tsx",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "dist": "npm run build && electron-builder",
+    "dist:win": "npm run build && electron-builder --win",
+    "dist:linux": "npm run build && electron-builder --linux",
+    "dist:mac": "npm run build && electron-builder --mac"
   },
   "devDependencies": {
     "@eslint/js": "^8.55.0",
@@ -54,12 +58,17 @@
     "appId": "com.wallhaven.downloader",
     "productName": "WallHaven Go",
     "directories": {
-      "output": "release"
+      "output": "dist-release"
     },
     "files": [
       "dist/**/*",
       "icon/**/*",
-      "node_modules/**/*"
+      "node_modules/**/*",
+      "package.json"
+    ],
+    "asar": true,
+    "asarUnpack": [
+      "icon/**/*"
     ],
     "icon": "icon/logo.png",
     "mac": {
@@ -67,7 +76,7 @@
       "icon": "icon/logo.png",
       "target": [
         {
-          "target": "dmg",
+          "target": "zip",
           "arch": ["x64", "arm64"]
         }
       ]
@@ -76,20 +85,30 @@
       "icon": "icon/logo.ico",
       "target": [
         {
+          "target": "portable",
+          "arch": ["x64", "ia32"]
+        },
+        {
           "target": "nsis",
           "arch": ["x64", "ia32"]
         }
       ]
     },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "WallHaven Go",
+      "installerIcon": "icon/logo.ico",
+      "uninstallerIcon": "icon/logo.ico",
+      "installerHeaderIcon": "icon/logo.ico"
+    },
     "linux": {
       "icon": "icon/logo.png",
       "target": [
         {
-          "target": "AppImage",
-          "arch": ["x64"]
-        },
-        {
-          "target": "deb",
+          "target": "tar.gz",
           "arch": ["x64"]
         }
       ],

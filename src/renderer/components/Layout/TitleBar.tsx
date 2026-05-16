@@ -39,7 +39,7 @@ const TitleBar: React.FC = () => {
   return (
     <div className="title-bar">
       <div className="title-bar-left">
-        <img className="title-bar-icon" src="/icon/logo.png" alt="Logo" />
+        <img className="title-bar-icon" src="./icon/logo.png" alt="Logo" />
         <span className="title-bar-text">WallHaven Go</span>
       </div>
       <div className="title-bar-right">

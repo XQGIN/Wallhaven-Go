@@ -5,7 +5,7 @@ node_modules/
 
 # Build outputs
 dist/
-release/
+dist-release/
 build/
 *.tsbuildinfo
 
@@ -49,3 +49,5 @@ out/
 *.pem
 *.cert
 *.key
+#md
+RELEASE.md

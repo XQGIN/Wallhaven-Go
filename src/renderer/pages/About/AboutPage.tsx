@@ -29,7 +29,7 @@ const AboutPage: React.FC = () => {
       <div className="about-grid">
         <Card title={t('about.appInfo')} delay={0}>
           <div className="about-app-header">
-            <img className="about-app-icon" src="/icon/logo.png" alt="Logo" />
+            <img className="about-app-icon" src="./icon/logo.png" alt="Logo" />
             <div className="about-app-info">
               <h2 className="about-app-name">{t('app.name')}</h2>
               <p className="about-app-version">{t('app.version')}</p>
@@ -41,7 +41,7 @@ const AboutPage: React.FC = () => {
         <Card title={t('about.developer')} delay={0.1}>
           <div className="about-info-item">
             <span className="about-label">{t('about.author')}</span>
-            <span className="about-value">WallhavenDownloader</span>
+            <span className="about-value">XQGIN</span>
           </div>
           <div className="about-info-item">
             <span className="about-label">{t('about.license')}</span>
@@ -53,7 +53,7 @@ const AboutPage: React.FC = () => {
           <div className="about-links">
             <a
               className="about-link"
-              href="https://wallhaven.cc"
+              href="https://wallhaven.cc/"
               target="_blank"
               rel="noopener noreferrer"
             >
@@ -61,7 +61,7 @@ const AboutPage: React.FC = () => {
             </a>
             <a
               className="about-link"
-              href="https://github.com"
+              href="https://github.com/XQGIN/Wallhaven-Go"
               target="_blank"
               rel="noopener noreferrer"
             >
