@@ -70,7 +70,7 @@
     "asarUnpack": [
       "icon/**/*"
     ],
-    "icon": "icon/logo.png",
+    "icon": "icon/logo-256.ico",
     "mac": {
       "category": "public.app-category.utilities",
       "icon": "icon/logo.png",
@@ -82,7 +82,7 @@
       ]
     },
     "win": {
-      "icon": "icon/logo.ico",
+      "icon": "icon/logo-256.ico",
       "target": [
         {
           "target": "portable",
@@ -100,9 +100,9 @@
       "createDesktopShortcut": true,
       "createStartMenuShortcut": true,
       "shortcutName": "WallHaven Go",
-      "installerIcon": "icon/logo.ico",
-      "uninstallerIcon": "icon/logo.ico",
-      "installerHeaderIcon": "icon/logo.ico"
+      "installerIcon": "icon/logo-256.ico",
+      "uninstallerIcon": "icon/logo-256.ico",
+      "installerHeaderIcon": "icon/logo-256.ico"
     },
     "linux": {
       "icon": "icon/logo.png",

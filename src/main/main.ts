@@ -142,7 +142,10 @@ class WallhavenApp {
     // 加载页面
     if (isDev) {
       this.mainWindow.loadURL('http://localhost:5173');
-      this.mainWindow.webContents.openDevTools();
+      // 延迟打开 DevTools 避免内部错误
+      this.mainWindow.webContents.once('did-finish-load', () => {
+        this.mainWindow?.webContents.openDevTools();
+      });
     } else {
       this.mainWindow.loadFile(path.join(__dirname, '../renderer/index.html'));
     }
@@ -166,54 +169,66 @@ class WallhavenApp {
     });
   }
 
-  private getIconPath(): string {
-    // 使用 process.resourcesPath 获取资源目录，支持 asar 打包
-    const iconDir = path.join(process.resourcesPath, 'app', 'icon');
+  private getIconPath(iconType: 'window' | 'tray' = 'window'): string {
+    // 根据环境确定图标目录
+    let iconDir: string;
+
+    if (isDev) {
+      // 开发环境：使用项目根目录下的 icon 文件夹
+      iconDir = path.join(__dirname, '..', '..', 'icon');
+    } else {
+      // 生产环境：使用 app.asar.unpacked 解压后的资源目录
+      iconDir = path.join(process.resourcesPath, 'app.asar.unpacked', 'icon');
+
+      // 如果解压目录不存在，尝试其他可能路径
+      if (!fs.existsSync(iconDir)) {
+        iconDir = path.join(process.resourcesPath, 'app', 'icon');
+      }
+      if (!fs.existsSync(iconDir)) {
+        iconDir = path.join(__dirname, '..', '..', 'icon');
+      }
+    }
+
+    // 根据用途选择不同尺寸的图标
     if (process.platform === 'win32') {
-      return path.join(iconDir, 'logo.ico');
-    } else if (process.platform === 'darwin') {
-      return path.join(iconDir, 'logo.png');
+      if (iconType === 'tray') {
+        return path.join(iconDir, 'logo-64.ico');
+      }
+      return path.join(iconDir, 'logo-256.ico');
     } else {
       return path.join(iconDir, 'logo.png');
     }
   }
 
   private createTrayIcon(): NativeImage {
-    const iconPath = this.getIconPath();
+    const iconPath = this.getIconPath('tray');
     console.log('[Tray] Loading icon from:', iconPath);
-    
+
     try {
-      // 检查文件是否存在
-      if (!fs.existsSync(iconPath)) {
-        console.error('[Tray] Icon file not found:', iconPath);
-        // 尝试备用路径
-        const fallbackPath = path.join(process.resourcesPath, 'app.asar.unpacked', 'icon', 'logo.ico');
-        console.log('[Tray] Trying fallback path:', fallbackPath);
-        if (fs.existsSync(fallbackPath)) {
-          return nativeImage.createFromPath(fallbackPath);
+      // 尝试多个可能的图标路径（优先使用对应尺寸的图标）
+      const iconFile = process.platform === 'win32' ? 'logo-64.ico' : 'logo.png';
+      const possiblePaths = [
+        iconPath,
+        path.join(process.resourcesPath, 'app.asar.unpacked', 'icon', iconFile),
+        path.join(process.resourcesPath, 'icon', iconFile),
+        path.join(__dirname, '..', '..', 'icon', iconFile),
+        path.join(__dirname, '..', '..', '..', 'icon', iconFile),
+      ];
+
+      for (const tryPath of possiblePaths) {
+        if (fs.existsSync(tryPath)) {
+          console.log('[Tray] Found icon at:', tryPath);
+          const icon = nativeImage.createFromPath(tryPath);
+
+          if (!icon.isEmpty()) {
+            // 使用 64x64 图标文件，无需额外缩放
+            return icon;
+          }
         }
-        // 返回空图标
-        return nativeImage.createEmpty();
       }
-      
-      const icon = nativeImage.createFromPath(iconPath);
-      
-      // 检查图标是否为空
-      if (icon.isEmpty()) {
-        console.error('[Tray] Icon is empty, trying PNG fallback');
-        const pngPath = path.join(path.dirname(iconPath), 'logo.png');
-        if (fs.existsSync(pngPath)) {
-          return nativeImage.createFromPath(pngPath);
-        }
-        return nativeImage.createEmpty();
-      }
-      
-      // 调整图标大小以适应托盘
-      const resized = icon.resize({ width: 16, height: 16 });
-      if (!resized.isEmpty()) {
-        return resized;
-      }
-      return icon;
+
+      console.error('[Tray] Could not find valid icon in any path');
+      return nativeImage.createEmpty();
     } catch (error) {
       console.error('[Tray] Failed to create tray icon:', error);
       return nativeImage.createEmpty();
