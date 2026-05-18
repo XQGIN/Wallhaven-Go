@@ -1,4 +1,4 @@
-import { app, BrowserWindow, ipcMain, dialog, shell, Tray, Menu, nativeImage, protocol, NativeImage } from 'electron';
+import { app, BrowserWindow, ipcMain, dialog, shell, Tray, Menu, nativeImage, protocol, NativeImage, screen } from 'electron';
 import * as path from 'path';
 import * as fs from 'fs';
 import { SettingsManager } from './settings-manager';
@@ -64,6 +64,7 @@ class WallhavenApp {
       this.createTray();
       this.setupIpcHandlers();
       this.setupDownloadEvents();
+      this.setupDisplayChangeHandler();
 
       app.on('activate', () => {
         if (BrowserWindow.getAllWindows().length === 0) {
@@ -169,46 +170,48 @@ class WallhavenApp {
     });
   }
 
-  private getIconPath(iconType: 'window' | 'tray' = 'window'): string {
-    // 根据环境确定图标目录
-    let iconDir: string;
-
+  private getIconDir(): string {
     if (isDev) {
-      // 开发环境：使用项目根目录下的 icon 文件夹
-      iconDir = path.join(__dirname, '..', '..', 'icon');
-    } else {
-      // 生产环境：使用 app.asar.unpacked 解压后的资源目录
-      iconDir = path.join(process.resourcesPath, 'app.asar.unpacked', 'icon');
-
-      // 如果解压目录不存在，尝试其他可能路径
-      if (!fs.existsSync(iconDir)) {
-        iconDir = path.join(process.resourcesPath, 'app', 'icon');
-      }
-      if (!fs.existsSync(iconDir)) {
-        iconDir = path.join(__dirname, '..', '..', 'icon');
-      }
+      return path.join(__dirname, '..', '..', 'icon');
     }
 
-    // 根据用途选择不同尺寸的图标
+    let iconDir = path.join(process.resourcesPath, 'app.asar.unpacked', 'icon');
+    if (!fs.existsSync(iconDir)) {
+      iconDir = path.join(process.resourcesPath, 'app', 'icon');
+    }
+    if (!fs.existsSync(iconDir)) {
+      iconDir = path.join(__dirname, '..', '..', 'icon');
+    }
+    return iconDir;
+  }
+
+  private getIconPath(iconType: 'window' | 'tray' = 'window'): string {
+    const iconDir = this.getIconDir();
+
+    // Windows 强制使用 PNG 解决高 DPI 缩放问题
+    // ICO 格式在 Windows 上容易出现抗锯齿失效、边缘发虚/锯齿
     if (process.platform === 'win32') {
       if (iconType === 'tray') {
-        return path.join(iconDir, 'logo-64.ico');
+        // 托盘图标使用 64x64 PNG，实际渲染时会根据 DPI 自动缩放
+        return path.join(iconDir, 'logo-64.png');
       }
-      return path.join(iconDir, 'logo-256.ico');
-    } else {
-      return path.join(iconDir, 'logo.png');
+      // 窗口图标使用 256x256 PNG，Windows 会自动选择合适尺寸
+      return path.join(iconDir, 'logo-256.png');
     }
+
+    return path.join(iconDir, 'logo.png');
   }
 
   private createTrayIcon(): NativeImage {
-    const iconPath = this.getIconPath('tray');
-    console.log('[Tray] Loading icon from:', iconPath);
+    const iconDir = this.getIconDir();
+    console.log('[Tray] Loading icon from dir:', iconDir);
 
     try {
-      // 尝试多个可能的图标路径（优先使用对应尺寸的图标）
-      const iconFile = process.platform === 'win32' ? 'logo-64.ico' : 'logo.png';
+      // Windows 强制使用 PNG 解决高 DPI 缩放问题
+      // 避免使用 ICO 格式，防止抗锯齿失效、边缘发虚/锯齿
+      const iconFile = process.platform === 'win32' ? 'logo-64.png' : 'logo.png';
       const possiblePaths = [
-        iconPath,
+        path.join(iconDir, iconFile),
         path.join(process.resourcesPath, 'app.asar.unpacked', 'icon', iconFile),
         path.join(process.resourcesPath, 'icon', iconFile),
         path.join(__dirname, '..', '..', 'icon', iconFile),
@@ -218,10 +221,25 @@ class WallhavenApp {
       for (const tryPath of possiblePaths) {
         if (fs.existsSync(tryPath)) {
           console.log('[Tray] Found icon at:', tryPath);
-          const icon = nativeImage.createFromPath(tryPath);
+          let icon = nativeImage.createFromPath(tryPath);
 
           if (!icon.isEmpty()) {
-            // 使用 64x64 图标文件，无需额外缩放
+            // Windows 托盘图标高 DPI 优化
+            if (process.platform === 'win32') {
+              // 根据系统 DPI 缩放比例调整图标尺寸
+              const scaleFactor = this.getTrayIconScaleFactor();
+              const targetSize = Math.round(16 * scaleFactor);
+
+              // 如果图标尺寸不匹配目标尺寸，进行高质量缩放
+              const size = icon.getSize();
+              if (size.width !== targetSize || size.height !== targetSize) {
+                icon = icon.resize({
+                  width: targetSize,
+                  height: targetSize,
+                  quality: 'best',
+                });
+              }
+            }
             return icon;
           }
         }
@@ -232,6 +250,18 @@ class WallhavenApp {
     } catch (error) {
       console.error('[Tray] Failed to create tray icon:', error);
       return nativeImage.createEmpty();
+    }
+  }
+
+  private getTrayIconScaleFactor(): number {
+    // 获取系统 DPI 缩放比例
+    // Windows 标准 DPI 为 96，常见缩放比例：100%(96), 125%(120), 150%(144), 200%(192)
+    try {
+      const primaryDisplay = screen.getPrimaryDisplay();
+      return primaryDisplay.scaleFactor || 1;
+    } catch {
+      // 如果 screen 模块未就绪，返回默认值
+      return 1;
     }
   }
 
@@ -262,6 +292,40 @@ class WallhavenApp {
       console.log('[Tray] Tray created successfully');
     } catch (error) {
       console.error('[Tray] Failed to create tray:', error);
+    }
+  }
+
+  private setupDisplayChangeHandler(): void {
+    // 监听显示器配置变化（包括 DPI 缩放变化）
+    screen.on('display-metrics-changed', (_event, _display, changedMetrics) => {
+      if (process.platform === 'win32' && changedMetrics?.includes('scaleFactor')) {
+        console.log('[Display] Scale factor changed, updating tray icon...');
+        // DPI 缩放变化时重新创建托盘图标
+        this.recreateTrayIcon();
+      }
+    });
+
+    // 监听显示器添加/移除
+    screen.on('display-added', () => {
+      console.log('[Display] Display added');
+    });
+
+    screen.on('display-removed', () => {
+      console.log('[Display] Display removed');
+    });
+  }
+
+  private recreateTrayIcon(): void {
+    if (!this.tray) return;
+
+    try {
+      const newIcon = this.createTrayIcon();
+      if (!newIcon.isEmpty()) {
+        this.tray.setImage(newIcon);
+        console.log('[Tray] Icon updated for new DPI scale');
+      }
+    } catch (error) {
+      console.error('[Tray] Failed to recreate tray icon:', error);
     }
   }
 
