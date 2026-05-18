@@ -91,6 +91,9 @@ class WallhavenApp {
   }
 
   private createWindow(): void {
+    // 获取窗口图标（任务栏图标）
+    const windowIcon = this.createWindowIcon();
+    
     this.mainWindow = new BrowserWindow({
       width: 1400,
       height: 900,
@@ -101,7 +104,7 @@ class WallhavenApp {
       frame: false,
       backgroundColor: '#f5f5f5',
       show: false,
-      icon: this.getIconPath(),
+      icon: windowIcon,
       webPreferences: {
         preload: path.join(__dirname, 'preload.js'),
         contextIsolation: true,
@@ -171,82 +174,98 @@ class WallhavenApp {
   }
 
   private getIconDir(): string {
+    // 统一使用 public/icon 目录
     if (isDev) {
-      return path.join(__dirname, '..', '..', 'icon');
+      return path.join(__dirname, '..', '..', 'public', 'icon');
     }
 
-    let iconDir = path.join(process.resourcesPath, 'app.asar.unpacked', 'icon');
+    // 生产环境优先查找 asar 解压目录
+    let iconDir = path.join(process.resourcesPath, 'app.asar.unpacked', 'public', 'icon');
     if (!fs.existsSync(iconDir)) {
-      iconDir = path.join(process.resourcesPath, 'app', 'icon');
+      iconDir = path.join(process.resourcesPath, 'app', 'public', 'icon');
     }
     if (!fs.existsSync(iconDir)) {
-      iconDir = path.join(__dirname, '..', '..', 'icon');
+      iconDir = path.join(__dirname, '..', '..', 'public', 'icon');
     }
     return iconDir;
   }
 
-  private getIconPath(iconType: 'window' | 'tray' = 'window'): string {
+  private getIconPath(): string {
     const iconDir = this.getIconDir();
+    // 使用 SVG 作为图标源，Electron 会自动处理缩放
+    return path.join(iconDir, 'logo.svg');
+  }
 
-    // Windows 强制使用 PNG 解决高 DPI 缩放问题
-    // ICO 格式在 Windows 上容易出现抗锯齿失效、边缘发虚/锯齿
-    if (process.platform === 'win32') {
-      if (iconType === 'tray') {
-        // 托盘图标使用 64x64 PNG，实际渲染时会根据 DPI 自动缩放
-        return path.join(iconDir, 'logo-64.png');
+  private createWindowIcon(): NativeImage {
+    const iconDir = this.getIconDir();
+    const iconPath = path.join(iconDir, 'logo-512.png');
+    console.log('[Window] Loading PNG icon from:', iconPath);
+
+    try {
+      if (!fs.existsSync(iconPath)) {
+        console.error('[Window] PNG icon not found at:', iconPath);
+        return nativeImage.createEmpty();
       }
-      // 窗口图标使用 256x256 PNG，Windows 会自动选择合适尺寸
-      return path.join(iconDir, 'logo-256.png');
-    }
 
-    return path.join(iconDir, 'logo.png');
+      const icon = nativeImage.createFromPath(iconPath);
+
+      if (icon.isEmpty()) {
+        console.error('[Window] Failed to load PNG icon');
+        return nativeImage.createEmpty();
+      }
+
+      // Windows 任务栏预览图标推荐 32x32 或 48x48，避免锯齿
+      if (process.platform === 'win32') {
+        const size = icon.getSize();
+        // 如果图标大于 64x64，缩放到 48x48 以获得更好的任务栏预览效果
+        if (size.width > 64 || size.height > 64) {
+          return icon.resize({
+            width: 48,
+            height: 48,
+            quality: 'best',
+          });
+        }
+      }
+
+      return icon;
+    } catch (error) {
+      console.error('[Window] Failed to create window icon:', error);
+      return nativeImage.createEmpty();
+    }
   }
 
   private createTrayIcon(): NativeImage {
     const iconDir = this.getIconDir();
-    console.log('[Tray] Loading icon from dir:', iconDir);
+    const iconPath = path.join(iconDir, 'logo-512.png');
+    console.log('[Tray] Loading PNG icon from:', iconPath);
 
     try {
-      // Windows 强制使用 PNG 解决高 DPI 缩放问题
-      // 避免使用 ICO 格式，防止抗锯齿失效、边缘发虚/锯齿
-      const iconFile = process.platform === 'win32' ? 'logo-64.png' : 'logo.png';
-      const possiblePaths = [
-        path.join(iconDir, iconFile),
-        path.join(process.resourcesPath, 'app.asar.unpacked', 'icon', iconFile),
-        path.join(process.resourcesPath, 'icon', iconFile),
-        path.join(__dirname, '..', '..', 'icon', iconFile),
-        path.join(__dirname, '..', '..', '..', 'icon', iconFile),
-      ];
-
-      for (const tryPath of possiblePaths) {
-        if (fs.existsSync(tryPath)) {
-          console.log('[Tray] Found icon at:', tryPath);
-          let icon = nativeImage.createFromPath(tryPath);
-
-          if (!icon.isEmpty()) {
-            // Windows 托盘图标高 DPI 优化
-            if (process.platform === 'win32') {
-              // 根据系统 DPI 缩放比例调整图标尺寸
-              const scaleFactor = this.getTrayIconScaleFactor();
-              const targetSize = Math.round(16 * scaleFactor);
-
-              // 如果图标尺寸不匹配目标尺寸，进行高质量缩放
-              const size = icon.getSize();
-              if (size.width !== targetSize || size.height !== targetSize) {
-                icon = icon.resize({
-                  width: targetSize,
-                  height: targetSize,
-                  quality: 'best',
-                });
-              }
-            }
-            return icon;
-          }
-        }
+      if (!fs.existsSync(iconPath)) {
+        console.error('[Tray] PNG icon not found at:', iconPath);
+        return nativeImage.createEmpty();
       }
 
-      console.error('[Tray] Could not find valid icon in any path');
-      return nativeImage.createEmpty();
+      const icon = nativeImage.createFromPath(iconPath);
+
+      if (icon.isEmpty()) {
+        console.error('[Tray] Failed to load PNG icon');
+        return nativeImage.createEmpty();
+      }
+
+      // 根据系统 DPI 缩放比例调整托盘图标尺寸
+      const scaleFactor = this.getTrayIconScaleFactor();
+      const traySize = Math.round(16 * scaleFactor);
+      const size = icon.getSize();
+      
+      if (size.width !== traySize || size.height !== traySize) {
+        return icon.resize({
+          width: traySize,
+          height: traySize,
+          quality: 'best',
+        });
+      }
+      
+      return icon;
     } catch (error) {
       console.error('[Tray] Failed to create tray icon:', error);
       return nativeImage.createEmpty();

@@ -29,7 +29,7 @@ const AboutPage: React.FC = () => {
       <div className="about-grid">
         <Card title={t('about.appInfo')} delay={0}>
           <div className="about-app-header">
-            <img className="about-app-icon" src="./icon/logo.png" alt="Logo" />
+            <img className="about-app-icon" src="./icon/logo.svg" alt="Logo" />
             <div className="about-app-info">
               <h2 className="about-app-name">{t('app.name')}</h2>
               <p className="about-app-version">{t('app.version')}</p>
@@ -53,7 +53,7 @@ const AboutPage: React.FC = () => {
           <div className="about-links">
             <a
               className="about-link"
-              href="https://wallhaven.cc/"
+              href="https://wallhaven-website.pages.dev/"
               target="_blank"
               rel="noopener noreferrer"
             >
@@ -71,7 +71,18 @@ const AboutPage: React.FC = () => {
         </Card>
 
         <Card title={t('about.acknowledgments')} delay={0.3}>
-          <p className="about-acknowledgments">{t('about.acknowledgmentsText')}</p>
+          <p className="about-acknowledgments">
+            {t('about.acknowledgmentsPrefix')}
+            <a
+              className="about-link-inline"
+              href="https://wallhaven.cc/"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              Wallhaven.cc
+            </a>
+            {t('about.acknowledgmentsSuffix')}
+          </p>
         </Card>
       </div>
     </motion.div>

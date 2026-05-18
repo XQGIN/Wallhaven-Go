@@ -102,6 +102,8 @@ export const zhCN: Record<string, string> = {
   'about.github': 'GitHub 仓库',
   'about.description': 'WallHaven Go 是一款基于 Electron 和 React 开发的桌面壁纸下载工具，支持从 Wallhaven 网站批量下载高清壁纸。',
   'about.acknowledgmentsText': '感谢 Wallhaven 提供优质的壁纸资源，感谢所有开源项目的贡献者。',
+  'about.acknowledgmentsPrefix': '感谢 ',
+  'about.acknowledgmentsSuffix': ' 提供优质的壁纸资源，感谢所有开源项目的贡献者。',
 
   // Messages
   'message.success': '成功',

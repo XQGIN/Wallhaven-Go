@@ -114,3 +114,14 @@
   line-height: 1.6;
   margin: 0;
 }
+
+.about-link-inline {
+  color: var(--accent-color);
+  text-decoration: none;
+  font-weight: 500;
+  transition: all 0.2s ease;
+}
+
+.about-link-inline:hover {
+  text-decoration: underline;
+}

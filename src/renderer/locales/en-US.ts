@@ -102,6 +102,8 @@ export const enUS: Record<string, string> = {
   'about.github': 'GitHub Repository',
   'about.description': 'WallHaven Go is a desktop wallpaper download tool based on Electron and React, supporting batch download of high-definition wallpapers from Wallhaven.',
   'about.acknowledgmentsText': 'Thanks to Wallhaven for providing quality wallpaper resources, and thanks to all open source project contributors.',
+  'about.acknowledgmentsPrefix': 'Thanks to ',
+  'about.acknowledgmentsSuffix': ' for providing quality wallpaper resources, and thanks to all open source project contributors.',
 
   // Messages
   'message.success': 'Success',
